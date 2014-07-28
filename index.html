@@ -128,8 +128,8 @@
 				var entities = [];				
 				
 				var settings = {
-					period:      ko.observable(120),
-					axisCount:      ko.observable(20),
+					period:      	ko.observable(240),
+					axisCount:      ko.observable(15),
 					axesVisibility: ko.observable(true),						
 					axisColor:      ko.observable("#dddddd"),
 					ballFillColor:  ko.observable("#ff0000"),
@@ -140,7 +140,8 @@
 					var centerX = canvas.width/2;
 					var centerY = canvas.height/2;
 					var r = canvas.height/2 - 40;
-
+					var ballRadius = settings.ballRadius();
+					
 					entities = [];
 					
 					entities.push(new Circle({ x: centerX, y: centerY, radius: r, strokeStyle: "#000000" }));
@@ -168,8 +169,8 @@
 												
 						(function (axisAlpha) {						
 							circle.update = function (stepAlpha) {
-								this.props.x = centerX + r*Math.cos(axisAlpha)*Math.cos(stepAlpha - axisAlpha);
-								this.props.y = centerY + r*Math.sin(axisAlpha)*Math.cos(stepAlpha - axisAlpha);
+								this.props.x = centerX + (r-ballRadius)*Math.cos(axisAlpha)*Math.cos(stepAlpha - axisAlpha);
+								this.props.y = centerY + (r-ballRadius)*Math.sin(axisAlpha)*Math.cos(stepAlpha - axisAlpha);
 							}
 						})(alpha);
 						
