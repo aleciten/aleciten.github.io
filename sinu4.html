@@ -126,8 +126,6 @@
 				var canvas = null;
 				var context = null;
 				var entities = [];				
-				var showContainer = true;				
-				var randomColors = false;
 				
 				var settings = {
 					period:      ko.observable(120),
@@ -178,9 +176,8 @@
 						entities.push(circle);
 					}									
 				};
-		
-				var frames = 0;
-				var render = function (stepAlpha) {
+						
+				var render = function (stepAlpha) {					
 					context.clearRect(0, 0, canvas.width, canvas.height);
 					
 					entities.forEach(function(e) {				
@@ -219,27 +216,27 @@
 			<h3>settings</h3>
 			<table cellspacing="0" cellpadding="0">
 				<tr>
-					<td><label for="Period">Period:</label></td>
+					<td><label for="Period">period:</label></td>
 					<td><input name="Period" type="number" min="1" max="200" data-bind="value: period" /></td>
 				</tr>				
 				<tr>
-					<td><label for="AxisVisibility">Show axes:</label></td>
+					<td><label for="AxisVisibility">show axes:</label></td>
 					<td><input name="AxisVisibility" type="checkbox" data-bind="checked: axesVisibility" /></td>
 				</tr>
 				<tr>
-					<td><label for="AxisColor">Axis color:</label></td>
+					<td><label for="AxisColor">axis color:</label></td>
 					<td><input name="AxisColor" type="color" data-bind="value: axisColor" /></td>
 				</tr>
 				<tr>
-					<td><label for="AxisCount">Axis count:</label></td>
+					<td><label for="AxisCount">axis count:</label></td>
 					<td><input name="AxisCount" type="number" min="1" max="150" data-bind="value: axisCount" /></td>
 				</tr>	
 				<tr>
-					<td><label for="BallRadius">Ball radius:</label></td>
+					<td><label for="BallRadius">ball radius:</label></td>
 					<td><input name="BallRadius" type="number" min="1" max="30" data-bind="value: ballRadius" /></td>
 				</tr>
 				<tr>
-					<td><label for="BallFillColor">Ball color:</label></td>
+					<td><label for="BallFillColor">ball color:</label></td>
 					<td><input name="BallFillColor" type="color" data-bind="value: ballFillColor" /></td>
 				</tr>					
 			</table>			
