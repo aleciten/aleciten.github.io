@@ -1,0 +1,248 @@
+<!--
+	Phase-shifted sinusoid wheel	
+	-- Ale Becher (aleciten @ github)
+-->
+<html>
+	<head>
+		<title>Phase-shifted sinusoid wheel</title>
+		
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>			
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/knockout/3.1.0/knockout-min.js"></script>		
+		
+		<style>  
+			body {
+				font-family: Consolas, monaco, monospace;;				
+			}
+			input[type=number]::-webkit-inner-spin-button {
+				opacity: 1
+			}				
+			h3 {
+				margin:10px 0px 15px 0px;				
+			}
+			label {
+				font-size:10pt;
+			}		
+			#settings {
+				padding:0px 12px 12px 12px;
+				border:1px solid #000;
+				margin-left:10px;				
+			}
+			#settings tr > td:nth-child(1) {
+				width:100px;
+				height:35px;
+			}
+			#settings tr > td:nth-child(2) {
+				font-size: 10px;
+				width:60px;
+			}
+			#settings tr td input {
+				width:100%;				
+			}
+			#settings fieldset {
+				margin-top:10px;
+			}
+		</style>
+				
+		<script>
+			var Entity = function (props) {				
+				this.props = $.extend({}, this.defaults, props);
+			};
+			Entity.prototype.type = "Entity";
+			Entity.prototype.update = function (step) {};
+			Entity.prototype.render = function (canvas, context) {};
+			Entity.prototype.defaults = {
+				x: 0,
+				y: 0,
+				fillStyle: "#ffffff",
+				strokeStyle: "transparent",
+				lineWidth: 1,
+				visible: true
+			};
+		</script>
+		
+		<script>
+			var Circle = function (props) {					
+				Entity.call(this, props);			
+			};
+			Circle.prototype = Object.create(Entity.prototype);
+			Circle.prototype.type = "Circle";			
+			Circle.prototype.render = function (canvas, context) {								
+				context.save();
+				
+				context.fillStyle = this.props.fillStyle;
+				context.lineWidth = this.props.lineWidth;
+				context.strokeStyle = this.props.strokeStyle;
+				
+				context.beginPath();			
+					context.arc(this.props.x, this.props.y, this.props.radius, 0, 2 * Math.PI, false);				
+					context.fill();	
+					context.stroke();
+				context.closePath();
+				
+				context.restore();
+			};
+					
+		</script>
+		
+		<script>
+			var Line = function (props) {										
+				Entity.call(this, props);
+			};
+			Line.prototype = Object.create(Entity.prototype);
+			Line.prototype.type = "Line";
+			Line.prototype.defaults.x0 = 0;
+			Line.prototype.defaults.y0 = 0;							
+			Line.prototype.render = function (canvas, context) {
+				if (!this.props.visible) return;
+				
+				context.save();
+				
+				context.lineWidth = this.props.lineWidth;
+				context.strokeStyle = this.props.strokeStyle;
+				context.setLineDash([2]);
+				
+				context.beginPath();					
+					context.moveTo(this.props.x0, this.props.y0);
+					context.lineTo(this.props.x, this.props.y);
+					context.stroke();
+				context.closePath();
+				
+				context.restore();
+			};
+			
+			var Axis = function (props) {
+				Line.call(this, props);
+				this.props.x0 = this.props.cx + (Math.cos(this.props.angle) * this.props.radius);
+				this.props.y0 = this.props.cy + (Math.sin(this.props.angle) * this.props.radius);
+				this.props.x  = this.props.cx - (Math.cos(this.props.angle) * this.props.radius);
+				this.props.y  = this.props.cy - (Math.sin(this.props.angle) * this.props.radius);
+			};
+			Axis.prototype = Object.create(Line.prototype);
+			Axis.prototype.type = "Axis";
+		</script>
+		
+		<script>
+			(function () {				
+				var canvas = null;
+				var context = null;
+				var entities = [];				
+				var showContainer = true;				
+				var randomColors = false;
+				
+				var settings = {
+					period:      ko.observable(120),
+					axisCount:      ko.observable(20),
+					axesVisibility: ko.observable(true),						
+					axisColor:      ko.observable("#dddddd"),
+					ballFillColor:  ko.observable("#ff0000"),
+					ballRadius: 	ko.observable(10)
+				};
+					
+				var setup = function () {					
+					var centerX = canvas.width/2;
+					var centerY = canvas.height/2;
+					var r = canvas.height/2 - 40;
+
+					entities = [];
+					
+					entities.push(new Circle({ x: centerX, y: centerY, radius: r, strokeStyle: "#000000" }));
+					
+					for (var alpha=0; alpha < 3.14; alpha += Math.PI / settings.axisCount()) {	
+						entities.push(new Axis({ 
+							cx: centerX, 
+							cy: centerY, 
+							angle: alpha, 
+							radius: r,
+							strokeStyle: settings.axisColor(),
+							visible: settings.axesVisibility()
+						}));						
+					}
+					
+					for (var alpha=0; alpha < 3.14; alpha += Math.PI / settings.axisCount()) {
+						var fillStyle = "#f00";
+					
+						var circle = new Circle({
+							x: centerX + r*Math.cos(alpha),
+							y: centerY + r*Math.sin(alpha),
+							radius: settings.ballRadius(),
+							fillStyle: settings.ballFillColor() 
+						});
+												
+						(function (axisAlpha) {						
+							circle.update = function (stepAlpha) {
+								this.props.x = centerX + r*Math.cos(axisAlpha)*Math.cos(stepAlpha - axisAlpha);
+								this.props.y = centerY + r*Math.sin(axisAlpha)*Math.cos(stepAlpha - axisAlpha);
+							}
+						})(alpha);
+						
+						entities.push(circle);
+					}									
+				};
+		
+				var frames = 0;
+				var render = function (stepAlpha) {
+					context.clearRect(0, 0, canvas.width, canvas.height);
+					
+					entities.forEach(function(e) {				
+						e.update(stepAlpha);
+						e.render(canvas, context);
+					});
+										
+					stepAlpha += 2*Math.PI*(1/settings.period());
+					if (stepAlpha > 6.28) stepAlpha = 0;
+										
+					requestAnimationFrame(function() { render(stepAlpha); });					
+				};
+				
+				$(function () { 
+					canvas = document.getElementById("canvas");
+					context = canvas.getContext("2d");
+					
+					for (var setting in settings) { 
+						settings[setting].subscribe(setup); 
+					}
+					ko.applyBindings(settings, document.getElementById("settings"));
+					
+					setup();
+					render(0); 
+				});
+			})();
+		</script>
+	</head>
+	
+	<body>
+		<div style="float:left;">
+			<canvas id="canvas" width="600" height="600" style="border:1px solid #000;" />		
+		</div>
+		
+		<div id="settings" style="float:left">
+			<h3>settings</h3>
+			<table cellspacing="0" cellpadding="0">
+				<tr>
+					<td><label for="Period">Period:</label></td>
+					<td><input name="Period" type="number" min="1" max="200" data-bind="value: period" /></td>
+				</tr>				
+				<tr>
+					<td><label for="AxisVisibility">Show axes:</label></td>
+					<td><input name="AxisVisibility" type="checkbox" data-bind="checked: axesVisibility" /></td>
+				</tr>
+				<tr>
+					<td><label for="AxisColor">Axis color:</label></td>
+					<td><input name="AxisColor" type="color" data-bind="value: axisColor" /></td>
+				</tr>
+				<tr>
+					<td><label for="AxisCount">Axis count:</label></td>
+					<td><input name="AxisCount" type="number" min="1" max="150" data-bind="value: axisCount" /></td>
+				</tr>	
+				<tr>
+					<td><label for="BallRadius">Ball radius:</label></td>
+					<td><input name="BallRadius" type="number" min="1" max="30" data-bind="value: ballRadius" /></td>
+				</tr>
+				<tr>
+					<td><label for="BallFillColor">Ball color:</label></td>
+					<td><input name="BallFillColor" type="color" data-bind="value: ballFillColor" /></td>
+				</tr>					
+			</table>			
+		</div>
+	</body>
+</html>
